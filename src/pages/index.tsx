@@ -7,7 +7,7 @@ const Home = () => {
   return (
     <div className={styles.container}>
       <div className={styles.sampleStyle} style={{backgroundPosition:`-${sampleVal*30}px 0`}} />
-      <button onClick={()=>setSampleVal(val=>(val+1)%14)}>Sample</button>
+      <button onClick={()=>setSampleVal(val=>(val+1)%14)}>ample</button>
     </div>
   );
 };
