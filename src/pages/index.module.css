@@ -13,3 +13,19 @@
   height: 30px;
   background: url('../assets/images/icons.png') no-repeat;
 }
+
+.boardStyle {
+  display: flex;
+  flex-wrap: wrap;
+  width: 270px; /* 9 cells * 30px per cell */
+  height: 270px; /* 9 cells * 30px per cell */
+  background-color: #C0C0C0;
+}
+
+.cellStyle {
+  width: 30px;
+  height: 30px;
+  border-color: #000;
+  border-style: solid;
+  border-width: 1px;
+}
