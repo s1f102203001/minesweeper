@@ -7,24 +7,33 @@ type FlaggedMapType = boolean[][];
 
 const Home = () => {
   const [userInputs] = useState([0, 1, 2]);
-  const [bumpMap, setBumpMap] = useState<BumpMapType>([
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-  ]);
+
+  const [bumpMap, setBumpMap] = useState<BumpMapType>(
+    Array.from({ length: 9 }, () => Array(9).fill(0)),
+  );
+
   const [isBombsPlaced, setIsBombsPlaced] = useState(false);
+
   const [clickedMap, setClickedMap] = useState<ClickedMapType>(
     Array.from({ length: 9 }, () => Array(9).fill(false)),
   );
+
   const [flaggedMap, setFlaggedMap] = useState<FlaggedMapType>(
     Array.from({ length: 9 }, () => Array(9).fill(false)),
   );
+
+  const directions = [
+    [0, 1],
+    [-1, 1],
+    [1, 0],
+    [1, -1],
+    [1, 1],
+    [-1, -1],
+    [-1, 0],
+    [0, -1],
+  ];
+
+  const [gameOver, setGameOver] = useState(false);
 
   useEffect(() => {
     console.log('bumpMap:', bumpMap);
@@ -48,36 +57,63 @@ const Home = () => {
       if (newBumpMap[row][col] === 0 && (row !== initialRow || col !== initialCol)) {
         newBumpMap[row][col] = 1;
         bombCounts++;
+
+        directions.forEach(([dx, dy]) => {
+          const newRow = row + dx;
+          const newCol = col + dy;
+          if (
+            newRow >= 0 &&
+            newRow < 9 &&
+            newCol >= 0 &&
+            newCol < 9 &&
+            newBumpMap[newRow][newCol] !== 1
+          ) {
+            newBumpMap[newRow][newCol]++;
+          }
+        });
       }
     }
 
     setBumpMap(newBumpMap);
     setIsBombsPlaced(true);
+    console.log('Bombs placed:', newBumpMap);
   };
 
   const clickHandler = (row: number, col: number, inputType: number) => {
     console.log('clickHandler called with', { row, col, inputType });
-    if (isBombsPlaced) {
+    if (!isBombsPlaced) {
       placeBombs(row, col);
+    } else {
+      console.log('Bombs already placed');
     }
 
     const newClickedMap = structuredClone(clickedMap) as ClickedMapType;
     const newFlaggedMap = structuredClone(flaggedMap) as FlaggedMapType;
-    const newBumpMap = structuredClone(bumpMap) as BumpMapType;
 
     switch (inputType) {
-      case userInputs[0]: // Continue
-        console.log('Continue');
+      case userInputs[0]:
+        console.log('No action for blank input type');
         break;
-      case userInputs[1]: // Left Click
-        if (newBumpMap[row][col] === 1) {
-          alert('Game Over');
-        } else {
-          newClickedMap[row][col] = true; // Mark as clicked
+      case userInputs[1]:
+        if (!newFlaggedMap[row][col]) {
+          newClickedMap[row][col] = true;
+          if (bumpMap[row][col] === 1) {
+            alert('Game Over');
+            setGameOver(true);
+            for (let i = 0; i < 9; i++) {
+              for (let j = 0; j < 9; j++) {
+                if (bumpMap[i][j] === 1) {
+                  newClickedMap[i][j] = true;
+                }
+              }
+            }
+          }
         }
         break;
-      case userInputs[2]: // Right Click
-        newFlaggedMap[row][col] = !newFlaggedMap[row][col]; // Toggle flag
+      case userInputs[2]:
+        if (!newClickedMap[row][col]) {
+          newFlaggedMap[row][col] = !newFlaggedMap[row][col];
+        }
         break;
       default:
         console.log('Unknown input type');
@@ -85,32 +121,23 @@ const Home = () => {
     }
     setClickedMap(newClickedMap);
     setFlaggedMap(newFlaggedMap);
-    setBumpMap(newBumpMap);
   };
 
   const getCellStyle = (row: number, col: number) => {
-    if (flaggedMap[row][col]) {
+    if (flaggedMap[row][col] || (gameOver && bumpMap[row][col] === 1)) {
       return { backgroundPosition: `-330px 0` }; // 旗の位置
     }
     if (clickedMap[row][col]) {
       if (bumpMap[row][col] === 1) {
         return { backgroundPosition: `-360px 0` }; // 爆弾の位置
       }
-      return { backgroundPosition: `-${bumpMap[row][col] * 30}px 0` }; // 数字の位置
+      return { backgroundPosition: `-${bumpMap[row][col] - 1 * 30}px 0` }; // 数字の位置
     }
     return { backgroundPosition: `-270px 0` }; // 未クリックの位置
   };
 
-  const [sampleVal, setSampleVal] = useState(0);
-  console.log(sampleVal);
-
   return (
     <div className={styles.container}>
-      <div
-        className={styles.sampleStyle}
-        style={{ backgroundPosition: `-${sampleVal * 30}px 0` }}
-      />
-      <button onClick={() => setSampleVal((val) => (val + 1) % 14)}>Sample</button>
       <div className={styles.boardStyle}>
         {bumpMap.map((row, y) =>
           row.map((col, x) => (
