@@ -8,11 +8,11 @@ type FlaggedMapType = boolean[][];
 const Home = () => {
   const [userInputs] = useState([0, 1, 2]);
 
-  const [bumpMap, setBumpMap] = useState<BumpMapType>(
+  const [bompMap, setBumpMap] = useState<BumpMapType>(
     Array.from({ length: 9 }, () => Array(9).fill(0)),
   );
 
-  const [isBombsPlaced, setIsBombsPlaced] = useState(false);
+  const isBombsPlaced = bompMap.flat().some((e) => e === 1);
 
   const [clickedMap, setClickedMap] = useState<ClickedMapType>(
     Array.from({ length: 9 }, () => Array(9).fill(false)),
@@ -36,51 +36,47 @@ const Home = () => {
   const [gameOver, setGameOver] = useState(false);
 
   useEffect(() => {
-    console.log('bumpMap:', bumpMap);
-  }, [bumpMap]);
+    console.log('bumpMap:');
+    console.table(bompMap);
+  }, [bompMap]);
 
   useEffect(() => {
-    console.log('clickedMap:', clickedMap);
+    console.log('clickedMap:');
+    console.table(clickedMap);
   }, [clickedMap]);
 
   useEffect(() => {
-    console.log('flaggedMap:', flaggedMap);
+    console.log('flaggedMap:');
+    console.table(flaggedMap);
   }, [flaggedMap]);
 
   const placeBombs = (initialRow: number, initialCol: number) => {
-    const newBumpMap = structuredClone(bumpMap) as BumpMapType;
+    const newBumpMap = structuredClone(bompMap) as BumpMapType;
     let bombCounts = 0;
+    const isNotInitialCell = (row: number, col: number) => {
+      if (row === initialRow && col === initialCol) return false;
+      for (const [dx, dy] of directions) {
+        if (row + dx === initialRow && col + dy === initialCol) return false;
+      }
+      return true;
+    };
     while (bombCounts < 10) {
       const row = Math.floor(Math.random() * 9);
       const col = Math.floor(Math.random() * 9);
 
-      if (newBumpMap[row][col] === 0 && (row !== initialRow || col !== initialCol)) {
+      if (newBumpMap[row][col] === 0 && isNotInitialCell(row, col)) {
         newBumpMap[row][col] = 1;
         bombCounts++;
-
-        directions.forEach(([dx, dy]) => {
-          const newRow = row + dx;
-          const newCol = col + dy;
-          if (
-            newRow >= 0 &&
-            newRow < 9 &&
-            newCol >= 0 &&
-            newCol < 9 &&
-            newBumpMap[newRow][newCol] !== 1
-          ) {
-            newBumpMap[newRow][newCol]++;
-          }
-        });
       }
     }
 
     setBumpMap(newBumpMap);
-    setIsBombsPlaced(true);
     console.log('Bombs placed:', newBumpMap);
   };
 
   const clickHandler = (row: number, col: number, inputType: number) => {
     console.log('clickHandler called with', { row, col, inputType });
+    if (gameOver) return;
     if (!isBombsPlaced) {
       placeBombs(row, col);
     } else {
@@ -97,12 +93,12 @@ const Home = () => {
       case userInputs[1]:
         if (!newFlaggedMap[row][col]) {
           newClickedMap[row][col] = true;
-          if (bumpMap[row][col] === 1) {
+          if (bompMap[row][col] === 1) {
             alert('Game Over');
             setGameOver(true);
             for (let i = 0; i < 9; i++) {
               for (let j = 0; j < 9; j++) {
-                if (bumpMap[i][j] === 1) {
+                if (bompMap[i][j] === 1) {
                   newClickedMap[i][j] = true;
                 }
               }
@@ -124,22 +120,24 @@ const Home = () => {
   };
 
   const getCellStyle = (row: number, col: number) => {
-    if (flaggedMap[row][col] || (gameOver && bumpMap[row][col] === 1)) {
-      return { backgroundPosition: `-330px 0` }; // 旗の位置
+    if (flaggedMap[row][col]) {
+      return { backgroundPosition: `-270px 0` }; // 旗の位置（0始まりで8個目）
     }
     if (clickedMap[row][col]) {
-      if (bumpMap[row][col] === 1) {
-        return { backgroundPosition: `-360px 0` }; // 爆弾の位置
+      if (bompMap[row][col] === 1) {
+        return { backgroundPosition: `-300px 0` }; // 爆弾の位置（0始まりで7個目）
       }
-      return { backgroundPosition: `-${bumpMap[row][col] - 1 * 30}px 0` }; // 数字の位置
+      if (bompMap[row][col] === 0) {
+        return { className: 'cellStyle blank' }; // 空白の位置（未クリックと同じ）
+      }
     }
-    return { backgroundPosition: `-270px 0` }; // 未クリックの位置
+    return { backgroundPosition: `-${(bompMap[row][col] - 1) * 30}px 0` }; // 数字の位置
   };
 
   return (
     <div className={styles.container}>
       <div className={styles.boardStyle}>
-        {bumpMap.map((row, y) =>
+        {bompMap.map((row, y) =>
           row.map((col, x) => (
             <div
               key={`${y}-${x}`}
